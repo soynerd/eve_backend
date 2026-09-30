@@ -1,0 +1,629 @@
+{
+  "info": {
+    "_postman_id": "eve-healthcare-2024",
+    "name": "EVE Healthcare API",
+    "description": "Complete API collection for the EVE Healthcare diagnostic booking backend.\n\nRun from top to bottom. Signup/Login automatically saves the token. Create operations save IDs for subsequent requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "centreId", "value": "", "type": "string" },
+    { "key": "testId", "value": "", "type": "string" },
+    { "key": "bookingId", "value": "", "type": "string" },
+    { "key": "paymentId", "value": "", "type": "string" },
+    { "key": "eventId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.data.token);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  pm.test('Signup successful', () => pm.response.to.have.status(201));",
+                  "  pm.test('Token returned', () => pm.expect(body.data.token).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/signup",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Sharma\",\n  \"email\": \"alice@eve.health\",\n  \"password\": \"DevPass1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', body.data.token);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  pm.test('Login successful', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@eve.health\",\n  \"password\": \"DevPass1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Invalid Credentials",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@eve.health\",\n  \"password\": \"WrongPassword1\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Centres",
+      "item": [
+        {
+          "name": "Create Centre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('centreId', body.data.id);",
+                  "  pm.test('Centre created', () => pm.response.to.have.status(201));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/centres",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apollo Diagnostics - Andheri\",\n  \"location\": \"Andheri West, Mumbai, Maharashtra\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Centres",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/centres?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Centre",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/centres/{{centreId}}"
+          }
+        },
+        {
+          "name": "Update Centre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/centres/{{centreId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apollo Diagnostics - Andheri (Updated)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Centre Tests",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/centres/{{centreId}}/tests"
+          }
+        },
+        {
+          "name": "Delete Centre",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/centres/{{centreId}}"
+          }
+        },
+        {
+          "name": "Create Centre (for tests below)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('centreId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/centres",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Metropolis Healthcare - Bandra\",\n  \"location\": \"Bandra East, Mumbai\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tests",
+      "item": [
+        {
+          "name": "Create Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('testId', pm.response.json().data.id);",
+                  "  pm.test('Test created', () => pm.response.to.have.status(201));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/tests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Complete Blood Count (CBC)\",\n  \"description\": \"Full haematology panel\",\n  \"price\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "List Tests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tests?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Test",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tests/{{testId}}"
+          }
+        },
+        {
+          "name": "Update Test",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/tests/{{testId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 549.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Link Test to Centre",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/tests/{{testId}}/centres",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centreId\": \"{{centreId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Test Centres",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tests/{{testId}}/centres"
+          }
+        },
+        {
+          "name": "Remove Test from Centre",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/tests/{{testId}}/centres/{{centreId}}"
+          }
+        },
+        {
+          "name": "Re-link Test to Centre (for Booking)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/tests/{{testId}}/centres",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centreId\": \"{{centreId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Test",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/tests/{{testId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('bookingId', pm.response.json().data.id);",
+                  "  pm.test('Booking created', () => pm.response.to.have.status(201));",
+                  "  pm.test('Status is PENDING', () => pm.expect(pm.response.json().data.status).to.equal('PENDING'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testId\": \"{{testId}}\",\n  \"centreId\": \"{{centreId}}\",\n  \"appointmentDate\": \"2027-06-15T10:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Booking",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bookings/{{bookingId}}"
+          }
+        },
+        {
+          "name": "Create Booking - Invalid (test not at centre)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testId\": \"00000000-0000-0000-0000-000000000000\",\n  \"centreId\": \"{{centreId}}\",\n  \"appointmentDate\": \"2027-06-15T10:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create New Booking for Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('bookingId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testId\": \"{{testId}}\",\n  \"centreId\": \"{{centreId}}\",\n  \"appointmentDate\": \"2027-07-20T09:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('paymentId', body.data.id);",
+                  "  pm.collectionVariables.set('eventId', body.data.eventId || '');",
+                  "  pm.test('Payment processed', () => pm.response.to.have.status(201));",
+                  "  pm.test('Has status', () => pm.expect(['SUCCESS', 'FAILED']).to.include(body.data.status));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Payment - Invalid booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Payment - No Auth",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhook",
+      "item": [
+        {
+          "name": "Create Fresh PENDING Booking for Webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('bookingId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testId\": \"{{testId}}\",\n  \"centreId\": \"{{centreId}}\",\n  \"appointmentDate\": \"2027-08-10T11:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Successful Webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Webhook processed', () => pm.response.to.have.status(200));",
+                  "pm.test('Not duplicate', () => pm.expect(pm.response.json().data.alreadyProcessed).to.be.false);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_success_unique_001\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerPaymentId\": \"pay_success_001\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Duplicate Webhook (Idempotency Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Duplicate handled with 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is duplicate', () => pm.expect(pm.response.json().data.alreadyProcessed).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_success_unique_001\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerPaymentId\": \"pay_success_001\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Failed Webhook",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// This needs a fresh PENDING booking - handled by creating new booking above"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_fail_unique_001\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerPaymentId\": \"pay_fail_001\",\n  \"status\": \"FAILED\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Invalid Webhook - Missing eventId",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerPaymentId\": \"pay_no_event\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Invalid Webhook - Bad Status",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_bad_status_001\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"providerPaymentId\": \"pay_bad_001\",\n  \"status\": \"PENDING\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Unknown Booking Webhook",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt_unknown_booking_001\",\n  \"bookingId\": \"00000000-0000-0000-0000-000000000000\",\n  \"providerPaymentId\": \"pay_unk_001\",\n  \"status\": \"SUCCESS\",\n  \"amount\": 499.99\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

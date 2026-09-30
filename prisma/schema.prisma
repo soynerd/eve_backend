@@ -1,0 +1,114 @@
+// This file is auto-generated. Do not edit manually.
+// Environment: development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+
+  @@index([email])
+}
+
+model DiagnosticCentre {
+  id        String              @id @default(uuid())
+  name      String
+  location  String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  tests     CentreTest[]
+  bookings  Booking[]
+}
+
+model DiagnosticTest {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal      @db.Decimal(10, 2)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  centres     CentreTest[]
+  bookings    Booking[]
+}
+
+// Junction table for the M:N relationship between centres and tests.
+// Storing price here is intentional - a centre can offer the same test
+// at a different price than another centre.
+model CentreTest {
+  id        String           @id @default(uuid())
+  centreId  String
+  testId    String
+  createdAt DateTime         @default(now())
+  centre    DiagnosticCentre @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  test      DiagnosticTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([centreId, testId])
+  @@index([centreId])
+  @@index([testId])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+model Booking {
+  id              String           @id @default(uuid())
+  userId          String
+  testId          String
+  centreId        String
+  appointmentDate DateTime
+  // Amount is captured at booking time - price changes on the test/centre
+  // do not retroactively affect existing bookings.
+  amount          Decimal          @db.Decimal(10, 2)
+  status          BookingStatus    @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id])
+  test            DiagnosticTest   @relation(fields: [testId], references: [id])
+  centre          DiagnosticCentre @relation(fields: [centreId], references: [id])
+  payments        Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  bookingId         String
+  provider          String        @default("simulated")
+  // providerPaymentId is the transaction reference returned by the provider.
+  providerPaymentId String?
+  // eventId is the unique identifier from the provider's webhook event.
+  // Enforced unique at the DB level to prevent duplicate webhook processing.
+  eventId           String?       @unique
+  amount            Decimal       @db.Decimal(10, 2)
+  status            PaymentStatus
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([eventId])
+}
